@@ -1,16 +1,7 @@
-import { HookHandler, HookStage } from "./hookTypes";
+import { preToolUse } from "./hooks/preToolUse";
+import { postIntentSelection } from "./hooks/postIntentSelection";
 
-export class HookRegistry {
-  private hooks: Record<HookStage, HookHandler[]> = {
-    PreToolUse: [],
-    PostToolUse: [],
-  };
-
-  register(stage: HookStage, handler: HookHandler) {
-    this.hooks[stage].push(handler);
-  }
-
-  get(stage: HookStage): HookHandler[] {
-    return this.hooks[stage];
-  }
-}
+export const hookRegistry = {
+  preToolUse,
+  postIntentSelection,
+};
