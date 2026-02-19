@@ -1,0 +1,30 @@
+active_intents:
+  - intent_id: INTENT-001
+    name: Traceability Enforcement
+    description: >
+      Ensure every agent-assisted code change is mapped to a traceable intent.
+      All executions must be logged in agent_trace.jsonl.
+    priority: HIGH
+    status: ACTIVE
+    created_by: system
+    tags: ["traceability", "audit", "governance"]
+
+  - intent_id: INTENT-002
+    name: Hook Trigger Validation
+    description: >
+      Ensure hooks are only triggered from approved VS Code events.
+      All hook triggers must be recorded for audit and debugging.
+    priority: HIGH
+    status: ACTIVE
+    created_by: system
+    tags: ["hooks", "vscode", "events"]
+
+  - intent_id: INTENT-003
+    name: Safety Guardrails
+    description: >
+      Prevent destructive behavior by restricting unsafe actions such as
+      file deletion, dangerous SQL, or external system modifications.
+    priority: CRITICAL
+    status: ACTIVE
+    created_by: system
+    tags: ["security", "safety", "policy"]
