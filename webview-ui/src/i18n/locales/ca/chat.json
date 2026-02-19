@@ -33,6 +33,9 @@
 	},
 	"unpin": "Desfixar",
 	"pin": "Fixar",
+	"fileChangesInConversation": {
+		"header": "{{count}} fitxer(s) canviat(s) en aquesta conversa"
+	},
 	"tokenProgress": {
 		"availableSpace": "Espai disponible: {{amount}} tokens",
 		"tokensUsed": "Tokens utilitzats: {{used}} de {{total}}",
@@ -347,9 +350,9 @@
 		},
 		"release": {
 			"heading": "Què hi ha de nou:",
-			"sonnet46": "Claude Sonnet 4.6: Suport complet per al darrer model Claude Sonnet 4.6 d'Anthropic a tots els proveïdors — Anthropic, Bedrock, Vertex, OpenRouter i Vercel AI Gateway.",
-			"stabilityFixes": "Millores d'estabilitat: Cicle de vida de delegació reforçat contra condicions de carrera, correcció de la preservació de l'historial de xat durant la navegació i la represa de tasques, i resolució de problemes d'ancoratge de desplaçament per a una experiència més fluida.",
-			"lockedApiConfig": "Configuració d'API bloquejada: Un nou commutador de bloqueig et permet fixar la configuració de l'API a tots els modes d'un espai de treball, de manera que canviar de mode ja no reinicia la configuració del proveïdor."
+			"fileChangesPanel": "Panell de canvis de fitxers: Fes un seguiment de totes les modificacions de fitxers fetes durant una conversa en un panell dedicat, facilitant la revisió dels canvis.",
+			"workspaceIndexing": "Controls d'indexació de l'espai de treball: La indexació ja no s'inicia automàticament — activa-la per espai de treball amb un simple commutador, i atura o cancel·la la indexació en qualsevol moment.",
+			"historyAndScroll": "Estabilitat de l'historial i el desplaçament: Emmagatzematge d'historial basat en fitxers per tasca per a seguretat entre instàncies, més un cicle de vida de desplaçament redissenyat per a una rehidratació del xat més fluida."
 		},
 		"cloudAgents": {
 			"heading": "Novetats al núvol:",
@@ -425,7 +428,8 @@
 		"indexing": "Indexant {{percentage}}%",
 		"indexed": "Indexat",
 		"error": "Error d'índex",
-		"status": "Estat de l'índex"
+		"status": "Estat de l'índex",
+		"stopping": "Aturant la indexació..."
 	},
 	"versionIndicator": {
 		"ariaLabel": "Versió {{version}} - Feu clic per veure les notes de llançament"

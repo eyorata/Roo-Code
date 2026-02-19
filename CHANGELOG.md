@@ -1,5 +1,23 @@
 # Roo Code Changelog
 
+## 3.49.0
+
+### Minor Changes
+
+- Add file changes panel to track all file modifications per conversation (#11493 by @saneroen, PR #11494 by @saneroen)
+- Add per-workspace indexing opt-in and stop/cancel indexing controls (#11455 by @JamesRobert20, PR #11456 by @JamesRobert20)
+- Add per-task file-based history store for cross-instance safety (PR #11490 by @roomote)
+- Fix: Redesign rehydration scroll lifecycle for smoother chat experience (PR #11483 by @hannesrudolph)
+- Fix: Bump @roo-code/types metadata version to 1.111.0 after revert regression (PR #11588 by @roomote)
+
+## 3.48.1
+
+### Patch Changes
+
+- Fix: Await MCP server initialization before returning McpHub instance, preventing race conditions (PR #11518 by @daniel-lxs)
+- Fix: Correct Bedrock Claude Sonnet 4.6 model ID (#11509 by @PeterDaveHello, PR #11569 by @PeterDaveHello)
+- Add DeleteQueuedMessage IPC command for managing queued messages (PR #11464 by @roomote)
+
 ## [3.48.0]
 
 - Add Anthropic Claude Sonnet 4.6 support across all providers — Anthropic, Bedrock, Vertex, OpenRouter, and Vercel AI Gateway (PR #11509 by @PeterDaveHello)
