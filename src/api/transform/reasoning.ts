@@ -30,7 +30,9 @@ export function isGeminiThinkingLevel(value: unknown): value is GeminiThinkingLe
 	return typeof value === "string" && GEMINI_THINKING_LEVELS.includes(value as GeminiThinkingLevel)
 }
 
-export type GeminiReasoningParams = GenerateContentConfig["thinkingConfig"] & {
+export type GeminiReasoningParams = {
+	thinkingBudget?: number
+	includeThoughts?: boolean
 	thinkingLevel?: GeminiThinkingLevel
 }
 

@@ -1,18 +1,18 @@
-import { HookContext, HookDecision } from "./hookTypes";
-import { hookRegistry } from "./hookRegistry";
+import { HookContext, HookDecision } from "./hookTypes"
+import { HookRegistry, hookRegistry } from "./hookRegistry"
 
 export class HookEngine {
-  async runPreToolUse(ctx: HookContext): Promise<void> {
-    const decision: HookDecision = await hookRegistry.preToolUse(ctx);
+	constructor(private readonly registry: HookRegistry = hookRegistry) {}
 
-    if (!decision.allowed) {
-      throw new Error(decision.reason);
-    }
-  }
+	async runPreToolUse(ctx: HookContext): Promise<void> {
+		const decision = (await this.registry.execute("PreToolUse", ctx)) as HookDecision | void
 
-  async runPostIntentSelection(ctx: HookContext): Promise<void> {
-    if (hookRegistry.postIntentSelection) {
-      await hookRegistry.postIntentSelection(ctx);
-    }
-  }
+		if (decision && !decision.allowed) {
+			throw new Error(decision.reason)
+		}
+	}
+
+	async runPostIntentSelection(ctx: HookContext): Promise<void> {
+		await this.registry.execute("PostIntentSelection", ctx)
+	}
 }
