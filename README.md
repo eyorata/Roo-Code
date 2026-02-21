@@ -59,6 +59,9 @@ This fork includes an intent-driven hook boundary with machine-managed sidecar a
 - Intent-to-file timeline in `.orchestration/intent_map.md`
 - Stale-write protection for parallel sessions via optimistic locking
 
+Submission docs:
+- [TRP1 Final Submission](TRP1_FINAL_SUBMISSION.md)
+
 ## Modes
 
 Roo Code adapts to how you work:
