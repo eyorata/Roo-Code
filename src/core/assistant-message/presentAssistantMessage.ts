@@ -713,6 +713,9 @@ export async function presentAssistantMessage(cline: Task) {
 			switch (block.name) {
 				case "select_active_intent":
 				case "select_intent": {
+					if (block.partial) {
+						break
+					}
 					try {
 						const args = {
 							intent_id: String(hookArgs.intent_id ?? ""),
@@ -740,12 +743,14 @@ export async function presentAssistantMessage(cline: Task) {
 						handleError,
 						pushToolResult,
 					})
-					await hookEngine.runPostToolUse({
-						...hookContext,
-						toolName: "write_to_file",
-						intentId: hookContext.intentId,
-						mutationClass: "AST_REFACTOR",
-					})
+					if (!block.partial) {
+						await hookEngine.runPostToolUse({
+							...hookContext,
+							toolName: "write_to_file",
+							intentId: hookContext.intentId,
+							mutationClass: "AST_REFACTOR",
+						})
+					}
 					break
 				case "update_todo_list":
 					await updateTodoListTool.handle(cline, block as ToolUse<"update_todo_list">, {
@@ -761,12 +766,14 @@ export async function presentAssistantMessage(cline: Task) {
 						handleError,
 						pushToolResult,
 					})
-					await hookEngine.runPostToolUse({
-						...hookContext,
-						toolName: "apply_diff",
-						intentId: hookContext.intentId,
-						mutationClass: "AST_REFACTOR",
-					})
+					if (!block.partial) {
+						await hookEngine.runPostToolUse({
+							...hookContext,
+							toolName: "apply_diff",
+							intentId: hookContext.intentId,
+							mutationClass: "AST_REFACTOR",
+						})
+					}
 					break
 				case "edit":
 				case "search_and_replace":
@@ -776,12 +783,14 @@ export async function presentAssistantMessage(cline: Task) {
 						handleError,
 						pushToolResult,
 					})
-					await hookEngine.runPostToolUse({
-						...hookContext,
-						toolName: block.name,
-						intentId: hookContext.intentId,
-						mutationClass: "AST_REFACTOR",
-					})
+					if (!block.partial) {
+						await hookEngine.runPostToolUse({
+							...hookContext,
+							toolName: block.name,
+							intentId: hookContext.intentId,
+							mutationClass: "AST_REFACTOR",
+						})
+					}
 					break
 				case "search_replace":
 					await checkpointSaveAndMark(cline)
@@ -790,12 +799,14 @@ export async function presentAssistantMessage(cline: Task) {
 						handleError,
 						pushToolResult,
 					})
-					await hookEngine.runPostToolUse({
-						...hookContext,
-						toolName: "search_replace",
-						intentId: hookContext.intentId,
-						mutationClass: "AST_REFACTOR",
-					})
+					if (!block.partial) {
+						await hookEngine.runPostToolUse({
+							...hookContext,
+							toolName: "search_replace",
+							intentId: hookContext.intentId,
+							mutationClass: "AST_REFACTOR",
+						})
+					}
 					break
 				case "edit_file":
 					await checkpointSaveAndMark(cline)
@@ -804,12 +815,14 @@ export async function presentAssistantMessage(cline: Task) {
 						handleError,
 						pushToolResult,
 					})
-					await hookEngine.runPostToolUse({
-						...hookContext,
-						toolName: "edit_file",
-						intentId: hookContext.intentId,
-						mutationClass: "AST_REFACTOR",
-					})
+					if (!block.partial) {
+						await hookEngine.runPostToolUse({
+							...hookContext,
+							toolName: "edit_file",
+							intentId: hookContext.intentId,
+							mutationClass: "AST_REFACTOR",
+						})
+					}
 					break
 				case "apply_patch":
 					await checkpointSaveAndMark(cline)
@@ -818,12 +831,14 @@ export async function presentAssistantMessage(cline: Task) {
 						handleError,
 						pushToolResult,
 					})
-					await hookEngine.runPostToolUse({
-						...hookContext,
-						toolName: "apply_patch",
-						intentId: hookContext.intentId,
-						mutationClass: "AST_REFACTOR",
-					})
+					if (!block.partial) {
+						await hookEngine.runPostToolUse({
+							...hookContext,
+							toolName: "apply_patch",
+							intentId: hookContext.intentId,
+							mutationClass: "AST_REFACTOR",
+						})
+					}
 					break
 				case "read_file":
 					// Type assertion is safe here because we're in the "read_file" case
