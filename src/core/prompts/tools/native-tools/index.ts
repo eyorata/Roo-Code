@@ -12,6 +12,7 @@ import listFiles from "./list_files"
 import newTask from "./new_task"
 import readCommandOutput from "./read_command_output"
 import { createReadFileTool, type ReadFileToolOptions } from "./read_file"
+import selectActiveIntent from "./select_active_intent"
 import runSlashCommand from "./run_slash_command"
 import skill from "./skill"
 import searchReplace from "./search_replace"
@@ -57,6 +58,7 @@ export function getNativeTools(options: NativeToolsOptions = {}): OpenAI.Chat.Ch
 		generateImage,
 		listFiles,
 		newTask,
+		selectActiveIntent,
 		readCommandOutput,
 		createReadFileTool(readFileOptions),
 		runSlashCommand,

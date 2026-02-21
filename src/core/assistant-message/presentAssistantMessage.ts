@@ -1,5 +1,6 @@
 import { serializeError } from "serialize-error"
 import { Anthropic } from "@anthropic-ai/sdk"
+import crypto from "crypto"
 
 import type { ToolName, ClineAsk, ToolProgressStatus } from "@roo-code/types"
 import { ConsecutiveMistakeError, TelemetryEventName } from "@roo-code/types"
@@ -40,6 +41,10 @@ import { codebaseSearchTool } from "../tools/CodebaseSearchTool"
 
 import { formatResponse } from "../prompts/responses"
 import { sanitizeToolUseId } from "../../utils/tool-id"
+import { createHookEngine } from "../../hooks"
+import { select_active_intent } from "../../orchestration/intentTool"
+
+const hookEngine = createHookEngine()
 
 /**
  * Processes and presents assistant message content to the user interface.
@@ -675,13 +680,71 @@ export async function presentAssistantMessage(cline: Task) {
 				}
 			}
 
+			const hookArgs = (
+				block.nativeArgs && typeof block.nativeArgs === "object" ? block.nativeArgs : (block.params ?? {})
+			) as Record<string, unknown>
+			const hookContext = {
+				sessionId: cline.taskId,
+				stage: "TOOL_EXECUTION" as "INTENT_SELECTION" | "CONTEXT_INJECTION" | "TOOL_EXECUTION",
+				intentId: undefined as string | undefined,
+				toolName: block.name,
+				args: hookArgs,
+				timestamp: new Date().toISOString(),
+				traceId: crypto.randomUUID(),
+				workspaceRoot: cline.cwd,
+				modelIdentifier: cline.api.getModel().id,
+				conversationUrl: cline.taskId,
+				hitlApproved: true,
+			}
+
+			if (!block.partial) {
+				try {
+					if (block.name === "select_active_intent" || block.name === "select_intent") {
+						hookContext.stage = "INTENT_SELECTION"
+						hookContext.toolName = "select_active_intent"
+					}
+					await hookEngine.runPreToolUse(hookContext)
+				} catch (error: any) {
+					pushToolResult(formatResponse.toolError(error?.message ?? String(error)))
+					break
+				}
+			}
+
 			switch (block.name) {
+				case "select_active_intent":
+				case "select_intent": {
+					try {
+						const args = {
+							intent_id: String(hookArgs.intent_id ?? ""),
+							intent_type: String(hookArgs.intent_type ?? ""),
+							summary: String(hookArgs.summary ?? ""),
+						}
+						const result = await select_active_intent(cline.cwd, cline.taskId, args)
+						await hookEngine.runPostIntentSelection({
+							...hookContext,
+							stage: "CONTEXT_INJECTION",
+							toolName: "select_active_intent",
+							intentId: args.intent_id,
+							args,
+						})
+						pushToolResult(JSON.stringify(result))
+					} catch (error: any) {
+						await handleError("selecting active intent", error)
+					}
+					break
+				}
 				case "write_to_file":
 					await checkpointSaveAndMark(cline)
 					await writeToFileTool.handle(cline, block as ToolUse<"write_to_file">, {
 						askApproval,
 						handleError,
 						pushToolResult,
+					})
+					await hookEngine.runPostToolUse({
+						...hookContext,
+						toolName: "write_to_file",
+						intentId: hookContext.intentId,
+						mutationClass: "AST_REFACTOR",
 					})
 					break
 				case "update_todo_list":
@@ -698,6 +761,12 @@ export async function presentAssistantMessage(cline: Task) {
 						handleError,
 						pushToolResult,
 					})
+					await hookEngine.runPostToolUse({
+						...hookContext,
+						toolName: "apply_diff",
+						intentId: hookContext.intentId,
+						mutationClass: "AST_REFACTOR",
+					})
 					break
 				case "edit":
 				case "search_and_replace":
@@ -707,6 +776,12 @@ export async function presentAssistantMessage(cline: Task) {
 						handleError,
 						pushToolResult,
 					})
+					await hookEngine.runPostToolUse({
+						...hookContext,
+						toolName: block.name,
+						intentId: hookContext.intentId,
+						mutationClass: "AST_REFACTOR",
+					})
 					break
 				case "search_replace":
 					await checkpointSaveAndMark(cline)
@@ -714,6 +789,12 @@ export async function presentAssistantMessage(cline: Task) {
 						askApproval,
 						handleError,
 						pushToolResult,
+					})
+					await hookEngine.runPostToolUse({
+						...hookContext,
+						toolName: "search_replace",
+						intentId: hookContext.intentId,
+						mutationClass: "AST_REFACTOR",
 					})
 					break
 				case "edit_file":
@@ -723,6 +804,12 @@ export async function presentAssistantMessage(cline: Task) {
 						handleError,
 						pushToolResult,
 					})
+					await hookEngine.runPostToolUse({
+						...hookContext,
+						toolName: "edit_file",
+						intentId: hookContext.intentId,
+						mutationClass: "AST_REFACTOR",
+					})
 					break
 				case "apply_patch":
 					await checkpointSaveAndMark(cline)
@@ -730,6 +817,12 @@ export async function presentAssistantMessage(cline: Task) {
 						askApproval,
 						handleError,
 						pushToolResult,
+					})
+					await hookEngine.runPostToolUse({
+						...hookContext,
+						toolName: "apply_patch",
+						intentId: hookContext.intentId,
+						mutationClass: "AST_REFACTOR",
 					})
 					break
 				case "read_file":

@@ -5,12 +5,29 @@ import { IntentManager } from "../orchestration/intentManager"
 import { HookHandler } from "./hookTypes"
 
 const INTENT_SELECT_TOOLS = new Set(["select_active_intent", "select_intent"])
-const WRITE_TOOLS = new Set(["write_file", "write_to_file", "replace_in_file", "apply_diff"])
+const WRITE_TOOLS = new Set([
+	"write_file",
+	"write_to_file",
+	"replace_in_file",
+	"apply_diff",
+	"edit",
+	"search_and_replace",
+	"search_replace",
+	"edit_file",
+	"apply_patch",
+])
 const DESTRUCTIVE_TOOLS = new Set(["execute_command", "terminal", ...WRITE_TOOLS])
 
 const FORBIDDEN_TERMINAL_PATTERNS = [/rm\s+-rf\s+\//i, /sudo\s+rm\s+-rf/i, /del\s+\/s/i, /format\s+/i]
 
 const sha256 = (value: string) => `sha256:${crypto.createHash("sha256").update(value, "utf8").digest("hex")}`
+
+const resolveTargetPath = (args: any): string => {
+	if (!args || typeof args !== "object") {
+		return ""
+	}
+	return String(args.path ?? args.file_path ?? "")
+}
 
 export const preToolUseHook: HookHandler = async (ctx) => {
 	const workspaceRoot = ctx.workspaceRoot ?? process.cwd()
@@ -45,14 +62,17 @@ export const preToolUseHook: HookHandler = async (ctx) => {
 		}
 	}
 
-	if (isDestructive && !ctx.hitlApproved) {
+	if (isDestructive && ctx.hitlApproved === false) {
 		return { allowed: false, reason: "HITL authorization required for destructive action.", requiresApproval: true }
 	}
 
 	if (WRITE_TOOLS.has(ctx.toolName)) {
-		const targetPath = String(ctx.args?.path ?? "")
+		const targetPath = resolveTargetPath(ctx.args)
 		if (!targetPath) {
-			return { allowed: false, reason: "write_file requires a target path." }
+			if (ctx.toolName === "apply_patch") {
+				return { allowed: true }
+			}
+			return { allowed: false, reason: `${ctx.toolName} requires a target path.` }
 		}
 
 		const absolutePath = path.isAbsolute(targetPath) ? targetPath : path.join(workspaceRoot, targetPath)

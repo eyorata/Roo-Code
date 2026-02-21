@@ -5,7 +5,17 @@ import { randomUUID } from "crypto"
 import { execSync } from "child_process"
 import { HookHandler } from "./hookTypes"
 
-const WRITE_TOOLS = new Set(["write_file", "write_to_file", "replace_in_file", "apply_diff"])
+const WRITE_TOOLS = new Set([
+	"write_file",
+	"write_to_file",
+	"replace_in_file",
+	"apply_diff",
+	"edit",
+	"search_and_replace",
+	"search_replace",
+	"edit_file",
+	"apply_patch",
+])
 
 const sha256 = (value: string) => `sha256:${crypto.createHash("sha256").update(value, "utf8").digest("hex")}`
 
@@ -28,7 +38,7 @@ export const postToolUseHook: HookHandler = async (ctx) => {
 	const orchestrationDir = path.join(workspaceRoot, ".orchestration")
 	fs.mkdirSync(orchestrationDir, { recursive: true })
 
-	const targetPathArg = String(ctx.args?.path ?? "")
+	const targetPathArg = String(ctx.args?.path ?? ctx.args?.file_path ?? "")
 	if (!targetPathArg) {
 		return { allowed: true }
 	}
