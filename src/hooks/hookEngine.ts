@@ -15,4 +15,8 @@ export class HookEngine {
 	async runPostIntentSelection(ctx: HookContext): Promise<void> {
 		await this.registry.execute("PostIntentSelection", ctx)
 	}
+
+	async runPostToolUse(ctx: HookContext): Promise<void> {
+		await this.registry.execute("PostToolUse", ctx)
+	}
 }

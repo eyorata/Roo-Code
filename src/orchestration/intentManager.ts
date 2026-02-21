@@ -1,65 +1,159 @@
-import * as path from "path";
-import { readYaml, writeYaml } from "./yamlStore";
+import * as fs from "fs"
+import * as path from "path"
+import { readYaml, writeYaml } from "./yamlStore"
 
-export type IntentStage =
-  | "INTENT_SELECTION"
-  | "CONTEXT_INJECTION"
-  | "TOOL_EXECUTION";
+export type IntentStage = "INTENT_SELECTION" | "CONTEXT_INJECTION" | "TOOL_EXECUTION"
 
-export interface ActiveIntent {
-  session_id: string;
-  active_intent?: {
-    intent_id: string;
-    intent_type: string;
-    summary: string;
-    stage: IntentStage;
-    context_files: string[];
-    last_updated: string;
-  };
+export interface IntentSpec {
+	id: string
+	name: string
+	status: "IN_PROGRESS" | "ACTIVE" | "BLOCKED" | "DONE" | string
+	owned_scope: string[]
+	constraints: string[]
+	acceptance_criteria: string[]
+}
+
+export interface SessionIntentState {
+	intent_id: string
+	intent_type: string
+	summary: string
+	stage: IntentStage
+	context_files: string[]
+	last_updated: string
+}
+
+export interface ActiveIntentsFile {
+	active_intents: IntentSpec[]
+	sessions: Record<string, SessionIntentState>
+}
+
+const defaultActiveIntents: ActiveIntentsFile = {
+	active_intents: [],
+	sessions: {},
+}
+
+const normalizePath = (value: string) => value.replace(/\\/g, "/")
+
+const globToRegExp = (glob: string): RegExp => {
+	const escaped = glob
+		.replace(/[.+^${}()|[\]\\]/g, "\\$&")
+		.replace(/\*\*/g, "___DOUBLE_WILDCARD___")
+		.replace(/\*/g, "[^/]*")
+		.replace(/___DOUBLE_WILDCARD___/g, ".*")
+	return new RegExp(`^${escaped}$`)
 }
 
 export class IntentManager {
-  private filePath: string;
+	private readonly filePath: string
+	private readonly intentIgnorePath: string
 
-  constructor(workspaceRoot: string) {
-    this.filePath = path.join(workspaceRoot, ".orchestration", "active_intents.yaml");
-  }
+	constructor(private readonly workspaceRoot: string) {
+		this.filePath = path.join(workspaceRoot, ".orchestration", "active_intents.yaml")
+		this.intentIgnorePath = path.join(workspaceRoot, ".intentignore")
+	}
 
-  getActiveIntent(): ActiveIntent {
-    return readYaml(this.filePath) || { session_id: "unknown" };
-  }
+	getState(): ActiveIntentsFile {
+		const data = readYaml(this.filePath) as Partial<ActiveIntentsFile> | null
+		return {
+			active_intents: Array.isArray(data?.active_intents) ? data.active_intents : [],
+			sessions: data?.sessions && typeof data.sessions === "object" ? data.sessions : {},
+		}
+	}
 
-  setActiveIntent(sessionId: string, intentId: string, intentType: string, summary: string) {
-    const payload: ActiveIntent = {
-      session_id: sessionId,
-      active_intent: {
-        intent_id: intentId,
-        intent_type: intentType,
-        summary,
-        stage: "CONTEXT_INJECTION",
-        context_files: [],
-        last_updated: new Date().toISOString()
-      }
-    };
-    writeYaml(this.filePath, payload);
-    return payload;
-  }
+	getIntentById(intentId: string): IntentSpec | undefined {
+		return this.getState().active_intents.find((intent) => intent.id === intentId)
+	}
 
-  updateStage(stage: IntentStage) {
-    const data = this.getActiveIntent();
-    if (!data.active_intent) return;
+	getSessionIntent(sessionId: string): SessionIntentState | undefined {
+		return this.getState().sessions[sessionId]
+	}
 
-    data.active_intent.stage = stage;
-    data.active_intent.last_updated = new Date().toISOString();
-    writeYaml(this.filePath, data);
-  }
+	requireSessionIntent(sessionId: string): SessionIntentState {
+		const sessionIntent = this.getSessionIntent(sessionId)
+		if (!sessionIntent) {
+			throw new Error("You must cite a valid active Intent ID.")
+		}
+		return sessionIntent
+	}
 
-  attachContextFiles(files: string[]) {
-    const data = this.getActiveIntent();
-    if (!data.active_intent) return;
+	setActiveIntent(sessionId: string, intentId: string, intentType: string, summary: string): ActiveIntentsFile {
+		const state = this.getState()
+		state.sessions[sessionId] = {
+			intent_id: intentId,
+			intent_type: intentType,
+			summary,
+			stage: "CONTEXT_INJECTION",
+			context_files: [],
+			last_updated: new Date().toISOString(),
+		}
+		writeYaml(this.filePath, state)
+		return state
+	}
 
-    data.active_intent.context_files = files;
-    data.active_intent.last_updated = new Date().toISOString();
-    writeYaml(this.filePath, data);
-  }
+	updateStage(sessionId: string, stage: IntentStage): void {
+		const state = this.getState()
+		const sessionIntent = state.sessions[sessionId]
+		if (!sessionIntent) {
+			return
+		}
+		sessionIntent.stage = stage
+		sessionIntent.last_updated = new Date().toISOString()
+		writeYaml(this.filePath, state)
+	}
+
+	attachContextFiles(sessionId: string, files: string[]): void {
+		const state = this.getState()
+		const sessionIntent = state.sessions[sessionId]
+		if (!sessionIntent) {
+			return
+		}
+		sessionIntent.context_files = files
+		sessionIntent.last_updated = new Date().toISOString()
+		writeYaml(this.filePath, state)
+	}
+
+	getIntentContext(intentId: string): { intent: IntentSpec; constraints: string[]; ownedScope: string[] } {
+		const intent = this.getIntentById(intentId)
+		if (!intent) {
+			throw new Error("You must cite a valid active Intent ID.")
+		}
+		return {
+			intent,
+			constraints: intent.constraints ?? [],
+			ownedScope: intent.owned_scope ?? [],
+		}
+	}
+
+	isPathInScope(intentId: string, relativePath: string): boolean {
+		const intent = this.getIntentById(intentId)
+		if (!intent) {
+			return false
+		}
+		const target = normalizePath(relativePath)
+		return intent.owned_scope.some((scopePattern) => globToRegExp(normalizePath(scopePattern)).test(target))
+	}
+
+	isIntentIgnored(relativePath: string): boolean {
+		if (!fs.existsSync(this.intentIgnorePath)) {
+			return false
+		}
+		const target = normalizePath(relativePath)
+		const raw = fs.readFileSync(this.intentIgnorePath, "utf-8")
+		const patterns = raw
+			.split(/\r?\n/)
+			.map((line) => line.trim())
+			.filter((line) => line && !line.startsWith("#"))
+		return patterns.some((pattern) => globToRegExp(normalizePath(pattern)).test(target))
+	}
+
+	toRelativePath(filePath: string): string {
+		return normalizePath(path.relative(this.workspaceRoot, filePath))
+	}
+
+	getIntentContextXml(intentId: string): string {
+		const { intent, constraints, ownedScope } = this.getIntentContext(intentId)
+		const constraintRows = constraints.map((constraint) => `<constraint>${constraint}</constraint>`).join("")
+		const scopeRows = ownedScope.map((scope) => `<path>${scope}</path>`).join("")
+		return `<intent_context><id>${intent.id}</id><name>${intent.name}</name><constraints>${constraintRows}</constraints><owned_scope>${scopeRows}</owned_scope></intent_context>`
+	}
 }

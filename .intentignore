@@ -1,0 +1,4 @@
+# Paths excluded from intent-managed mutations
+node_modules/**
+dist/**
+coverage/**

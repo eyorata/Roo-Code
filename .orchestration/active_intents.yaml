@@ -1,30 +1,30 @@
 active_intents:
-  - intent_id: INTENT-001
-    name: Traceability Enforcement
-    description: >
-      Ensure every agent-assisted code change is mapped to a traceable intent.
-      All executions must be logged in agent_trace.jsonl.
-    priority: HIGH
-    status: ACTIVE
-    created_by: system
-    tags: ["traceability", "audit", "governance"]
-
-  - intent_id: INTENT-002
-    name: Hook Trigger Validation
-    description: >
-      Ensure hooks are only triggered from approved VS Code events.
-      All hook triggers must be recorded for audit and debugging.
-    priority: HIGH
-    status: ACTIVE
-    created_by: system
-    tags: ["hooks", "vscode", "events"]
-
-  - intent_id: INTENT-003
-    name: Safety Guardrails
-    description: >
-      Prevent destructive behavior by restricting unsafe actions such as
-      file deletion, dangerous SQL, or external system modifications.
-    priority: CRITICAL
-    status: ACTIVE
-    created_by: system
-    tags: ["security", "safety", "policy"]
+  - id: "INT-001"
+    name: "Hook Middleware Boundary"
+    status: "IN_PROGRESS"
+    owned_scope:
+      - "src/hooks/**"
+      - "src/agent/**"
+      - "src/orchestration/**"
+      - ".orchestration/**"
+      - "AGENT.md"
+      - "ARCHITECTURE_NOTES.md"
+    constraints:
+      - "Must enforce intent selection before mutating actions"
+      - "Must block writes outside owned_scope"
+      - "Must produce content_hash in agent_trace.jsonl"
+    acceptance_criteria:
+      - "pnpm --filter roo-cline run check-types passes"
+      - "write_file events append full trace schema"
+  - id: "INT-002"
+    name: "Parallel Concurrency Guardrails"
+    status: "ACTIVE"
+    owned_scope:
+      - "src/hooks/**"
+      - "src/orchestration/**"
+    constraints:
+      - "Must reject stale writes when expected hash does not match disk"
+      - "Must return recoverable structured errors for blocked operations"
+    acceptance_criteria:
+      - "Stale file mismatch returns Stale File error"
+sessions: {}

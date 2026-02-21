@@ -8,6 +8,7 @@ export async function postIntentSelection(ctx: HookContext): Promise<void> {
 	const workspaceRoot = ctx.workspaceRoot ?? process.cwd()
 	const intentManager = new IntentManager(workspaceRoot)
 	const store = new ArtifactStore(workspaceRoot)
+	const intentId = ctx.intentId
 
 	// Example: load context docs
 	const contextFiles = [
@@ -15,16 +16,17 @@ export async function postIntentSelection(ctx: HookContext): Promise<void> {
 		path.join(workspaceRoot, "README.md"),
 	].filter((f) => fs.existsSync(f))
 
-	intentManager.attachContextFiles(contextFiles)
+	intentManager.attachContextFiles(ctx.sessionId, contextFiles)
 
 	store.appendTrace({
 		event: "ContextInjected",
 		session_id: ctx.sessionId,
-		intent_id: ctx.intentId,
+		intent_id: intentId,
+		intent_context: intentId ? intentManager.getIntentContextXml(intentId) : undefined,
 		injected_files: contextFiles,
 		timestamp: new Date().toISOString(),
 	})
 
 	// move to execution stage
-	intentManager.updateStage("TOOL_EXECUTION")
+	intentManager.updateStage(ctx.sessionId, "TOOL_EXECUTION")
 }
