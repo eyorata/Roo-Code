@@ -1,7 +1,26 @@
 active_intents:
   - id: "INT-001"
-    name: "Hook Middleware Boundary"
+    name: "Read Workspace Context"
     status: "IN_PROGRESS"
+    owned_scope:
+      - "**/*"
+    constraints:
+      - "Read-only context gathering"
+      - "No mutating tools in this intent"
+    acceptance_criteria:
+      - "Agent inspects files and gathers project context"
+    allowed_tools:
+      - "select_active_intent"
+      - "read_file"
+      - "list_files"
+      - "search_files"
+      - "codebase_search"
+      - "read_command_output"
+      - "ask_followup_question"
+      - "attempt_completion"
+  - id: "INT-002"
+    name: "Write And Refactor Code"
+    status: "ACTIVE"
     owned_scope:
       - "src/hooks/**"
       - "src/agent/**"
@@ -10,21 +29,63 @@ active_intents:
       - "AGENT.md"
       - "ARCHITECTURE_NOTES.md"
     constraints:
-      - "Must enforce intent selection before mutating actions"
-      - "Must block writes outside owned_scope"
-      - "Must produce content_hash in agent_trace.jsonl"
+      - "Writes must stay in owned_scope"
+      - "All writes require trace logging with content_hash"
     acceptance_criteria:
-      - "pnpm --filter roo-cline run check-types passes"
-      - "write_file events append full trace schema"
-  - id: "INT-002"
-    name: "Parallel Concurrency Guardrails"
+      - "Code changes are trace-linked to INT-002"
+    allowed_tools:
+      - "select_active_intent"
+      - "read_file"
+      - "list_files"
+      - "search_files"
+      - "codebase_search"
+      - "write_to_file"
+      - "apply_diff"
+      - "edit"
+      - "search_and_replace"
+      - "search_replace"
+      - "edit_file"
+      - "apply_patch"
+      - "ask_followup_question"
+      - "attempt_completion"
+  - id: "INT-003"
+    name: "Delete And Cleanup Operations"
     status: "ACTIVE"
     owned_scope:
-      - "src/hooks/**"
-      - "src/orchestration/**"
+      - "src/**"
+      - "apps/**"
+      - "packages/**"
+      - ".orchestration/**"
     constraints:
-      - "Must reject stale writes when expected hash does not match disk"
-      - "Must return recoverable structured errors for blocked operations"
+      - "Delete operations must be intentional and traceable"
+      - "Destructive commands require approval"
     acceptance_criteria:
-      - "Stale file mismatch returns Stale File error"
+      - "Cleanup operations are trace-linked and policy-compliant"
+    allowed_tools:
+      - "select_active_intent"
+      - "read_file"
+      - "list_files"
+      - "apply_patch"
+      - "execute_command"
+      - "read_command_output"
+      - "ask_followup_question"
+      - "attempt_completion"
+  - id: "INT-004"
+    name: "Execute Build And Verification Commands"
+    status: "ACTIVE"
+    owned_scope:
+      - "**/*"
+    constraints:
+      - "Commands must be safe and reproducible"
+      - "Prefer non-destructive verification commands"
+    acceptance_criteria:
+      - "Build/check/test command output is captured and actionable"
+    allowed_tools:
+      - "select_active_intent"
+      - "execute_command"
+      - "read_command_output"
+      - "read_file"
+      - "list_files"
+      - "ask_followup_question"
+      - "attempt_completion"
 sessions: {}

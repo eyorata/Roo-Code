@@ -13,7 +13,7 @@ export default {
 			properties: {
 				intent_id: {
 					type: "string",
-					description: "Active intent identifier (for example INT-001).",
+					description: "Active intent identifier (for example INT-001). Use AUTO to infer from summary.",
 				},
 				intent_type: {
 					type: "string",

@@ -49,6 +49,16 @@
 - Automate repetitive tasks
 - Utilize MCP Servers
 
+## Intent-Orchestration Extension Additions
+
+This fork includes an intent-driven hook boundary with machine-managed sidecar artifacts:
+
+- Mandatory intent handshake before mutating tool execution
+- Context injection from `.orchestration/active_intents.yaml`
+- Append-only mutation ledger in `.orchestration/agent_trace.jsonl`
+- Intent-to-file timeline in `.orchestration/intent_map.md`
+- Stale-write protection for parallel sessions via optimistic locking
+
 ## Modes
 
 Roo Code adapts to how you work:

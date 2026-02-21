@@ -11,6 +11,7 @@ export interface IntentSpec {
 	owned_scope: string[]
 	constraints: string[]
 	acceptance_criteria: string[]
+	allowed_tools?: string[]
 }
 
 export interface SessionIntentState {
@@ -62,6 +63,10 @@ export class IntentManager {
 
 	getIntentById(intentId: string): IntentSpec | undefined {
 		return this.getState().active_intents.find((intent) => intent.id === intentId)
+	}
+
+	getIntentIds(): string[] {
+		return this.getState().active_intents.map((intent) => intent.id)
 	}
 
 	getSessionIntent(sessionId: string): SessionIntentState | undefined {
@@ -124,6 +129,47 @@ export class IntentManager {
 		}
 	}
 
+	selectIntentByPrompt(summary: string, intentType?: string): IntentSpec | undefined {
+		const intents = this.getState().active_intents
+		const tokens = `${summary} ${intentType ?? ""}`
+			.toLowerCase()
+			.split(/[^a-z0-9]+/)
+			.filter(Boolean)
+
+		let best: { score: number; intent?: IntentSpec } = { score: 0 }
+
+		for (const intent of intents) {
+			const haystack = [
+				intent.id,
+				intent.name,
+				...(intent.constraints ?? []),
+				...(intent.owned_scope ?? []),
+				...(intent.allowed_tools ?? []),
+			]
+				.join(" ")
+				.toLowerCase()
+
+			const score = tokens.reduce((acc, token) => (haystack.includes(token) ? acc + 1 : acc), 0)
+			if (score > best.score) {
+				best = { score, intent }
+			}
+		}
+
+		return best.score > 0 ? best.intent : intents[0]
+	}
+
+	isToolAllowed(intentId: string, toolName: string): boolean {
+		const intent = this.getIntentById(intentId)
+		if (!intent) {
+			return false
+		}
+		const allowed = intent.allowed_tools
+		if (!allowed || allowed.length === 0) {
+			return true
+		}
+		return allowed.includes(toolName) || allowed.includes("*")
+	}
+
 	isPathInScope(intentId: string, relativePath: string): boolean {
 		const intent = this.getIntentById(intentId)
 		if (!intent) {
@@ -154,6 +200,7 @@ export class IntentManager {
 		const { intent, constraints, ownedScope } = this.getIntentContext(intentId)
 		const constraintRows = constraints.map((constraint) => `<constraint>${constraint}</constraint>`).join("")
 		const scopeRows = ownedScope.map((scope) => `<path>${scope}</path>`).join("")
-		return `<intent_context><id>${intent.id}</id><name>${intent.name}</name><constraints>${constraintRows}</constraints><owned_scope>${scopeRows}</owned_scope></intent_context>`
+		const toolRows = (intent.allowed_tools ?? []).map((tool) => `<tool>${tool}</tool>`).join("")
+		return `<intent_context><id>${intent.id}</id><name>${intent.name}</name><constraints>${constraintRows}</constraints><owned_scope>${scopeRows}</owned_scope><allowed_tools>${toolRows}</allowed_tools></intent_context>`
 	}
 }
